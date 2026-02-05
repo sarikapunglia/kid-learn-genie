@@ -17,13 +17,20 @@ interface UserData {
 interface QuestionData {
   subject: string;
   concepts: string;
+  complexity: string;
+}
+
+interface QuestionItem {
+  question: string;
+  options: string[];
+  correctAnswers: number[];
 }
 
 const Index = () => {
   const [step, setStep] = useState<AppStep>("login");
   const [userData, setUserData] = useState<UserData | null>(null);
   const [questionData, setQuestionData] = useState<QuestionData | null>(null);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<QuestionItem[]>([]);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const { toast } = useToast();
 
@@ -42,6 +49,7 @@ const Index = () => {
           body: {
             subject: data.subject,
             concepts: data.concepts,
+            complexity: data.complexity,
             age: userData.age,
             classLevel: userData.classLevel,
           },
@@ -130,6 +138,7 @@ const Index = () => {
         classLevel={userData.classLevel}
         subject={questionData.subject}
         concepts={questionData.concepts}
+        complexity={questionData.complexity}
         questions={questions}
         onBack={handleBackToSelect}
         onStartOver={handleStartOver}

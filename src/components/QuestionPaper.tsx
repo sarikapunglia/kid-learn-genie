@@ -1,13 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Printer, ArrowLeft, FileText, Sparkles, RefreshCw } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+
+interface QuestionItem {
+  question: string;
+  options: string[];
+  correctAnswers: number[];
+}
 
 interface QuestionPaperProps {
   userName: string;
   classLevel: string;
   subject: string;
   concepts: string;
-  questions: string[];
+  complexity: string;
+  questions: QuestionItem[];
   onBack: () => void;
   onStartOver: () => void;
   onRegenerate: () => void;
@@ -32,11 +42,21 @@ const getSubjectName = (value: string): string => {
   return subjects[value] || value;
 };
 
+const getComplexityLabel = (value: string): { label: string; color: string } => {
+  const levels: Record<string, { label: string; color: string }> = {
+    easy: { label: "Easy 🌱", color: "bg-green-100 text-green-800" },
+    medium: { label: "Medium 🌿", color: "bg-yellow-100 text-yellow-800" },
+    hard: { label: "Hard 🌳", color: "bg-red-100 text-red-800" },
+  };
+  return levels[value] || { label: value, color: "bg-muted text-muted-foreground" };
+};
+
 const QuestionPaper = ({
   userName,
   classLevel,
   subject,
   concepts,
+  complexity,
   questions,
   onBack,
   onStartOver,
@@ -52,6 +72,9 @@ const QuestionPaper = ({
     month: "long",
     day: "numeric",
   });
+
+  const complexityInfo = getComplexityLabel(complexity);
+  const optionLabels = ["A", "B", "C", "D"];
 
   return (
     <div className="min-h-screen gradient-hero p-4 md:p-8">
@@ -116,6 +139,11 @@ const QuestionPaper = ({
                 <span>•</span>
                 <span className="font-semibold">Date: {currentDate}</span>
               </div>
+              <div className="flex items-center gap-2 pt-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${complexityInfo.color}`}>
+                  {complexityInfo.label}
+                </span>
+              </div>
               <div className="pt-2">
                 <p className="text-sm text-muted-foreground">
                   <span className="font-semibold">Topics covered:</span> {concepts}
@@ -130,19 +158,52 @@ const QuestionPaper = ({
                 <span>Time: 60 minutes</span>
               </div>
 
-              <ol className="space-y-5 list-decimal list-inside">
-                {questions.map((question, index) => (
-                  <li
-                    key={index}
-                    className="text-base leading-relaxed pl-2 pb-4 border-b border-border/50 last:border-0"
-                  >
-                    <span className="font-medium">{question}</span>
-                    <div className="mt-4 ml-6 border-b border-dotted border-muted-foreground/30 h-8" />
-                    <div className="ml-6 border-b border-dotted border-muted-foreground/30 h-8" />
-                  </li>
-                ))}
-              </ol>
-
+              <div className="space-y-8">
+                {questions.map((item, index) => {
+                  const hasMultipleCorrect = item.correctAnswers.length > 1;
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="pb-6 border-b border-border/50 last:border-0"
+                    >
+                      <div className="flex gap-2 mb-4">
+                        <span className="font-bold text-primary">{index + 1}.</span>
+                        <span className="font-medium">{item.question}</span>
+                        {hasMultipleCorrect && (
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2 whitespace-nowrap">
+                            Multiple answers
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {item.options.map((option, optIdx) => (
+                          <div
+                            key={optIdx}
+                            className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
+                          >
+                            {hasMultipleCorrect ? (
+                              <Checkbox id={`q${index}-opt${optIdx}`} className="print:border-2" />
+                            ) : (
+                              <div className="h-4 w-4 rounded-full border border-primary print:border-2" />
+                            )}
+                            <Label
+                              htmlFor={`q${index}-opt${optIdx}`}
+                              className="flex-1 cursor-pointer text-sm"
+                            >
+                              <span className="font-semibold text-primary mr-2">
+                                {optionLabels[optIdx]}.
+                              </span>
+                              {option}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               <div className="pt-8 border-t-2 border-dashed border-border text-center text-muted-foreground">
                 <p className="font-semibold">✨ Good luck! You've got this! ✨</p>
               </div>

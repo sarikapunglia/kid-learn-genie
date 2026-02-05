@@ -11,30 +11,62 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, concepts, age, classLevel } = await req.json();
+    const { subject, concepts, age, classLevel, complexity } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const systemPrompt = `You are an expert educational content creator specializing in creating age-appropriate questions for students.
+    const complexityGuidelines = {
+      easy: `
+- Use simple, straightforward language
+- Questions should test basic understanding and recall
+- Avoid complex scenarios or multi-step problems
+- Focus on fundamental concepts
+- Options should have clearly distinct answers`,
+      medium: `
+- Use moderately complex language appropriate for the grade level
+- Include some application-based questions
+- Mix of recall and understanding questions
+- Some questions may require 2-step thinking
+- Options should require careful reading to distinguish`,
+      hard: `
+- Use challenging, grade-appropriate language
+- Include complex scenarios and multi-step problems
+- Focus on analysis, application, and critical thinking
+- Questions should test deep understanding
+- Options should include plausible distractors that test nuanced understanding`,
+    };
 
-Your task is to generate exactly 20 educational questions based on the provided subject, topics/concepts, student age, and class level.
+    const systemPrompt = `You are an expert educational content creator specializing in creating age-appropriate multiple choice questions for students.
+
+Your task is to generate exactly 20 educational multiple choice questions based on the provided subject, topics/concepts, student age, class level, and complexity level.
+
+COMPLEXITY LEVEL: ${complexity.toUpperCase()}
+${complexityGuidelines[complexity as keyof typeof complexityGuidelines] || complexityGuidelines.medium}
 
 Guidelines:
 - Questions should be appropriate for a ${age}-year-old student in ${classLevel}
-- Mix different question types: multiple choice concepts, short answer, fill in the blanks, true/false, and problem-solving
-- Questions should progress from easier to more challenging
-- Use clear, simple language appropriate for the student's age
-- Make questions engaging and interesting for kids
-- Cover all the concepts/topics mentioned by the student
+- Each question MUST have exactly 4 options (A, B, C, D)
+- One or more options can be correct (indicate which ones)
+- Cover all the concepts/topics mentioned
 - For math questions, include actual numbers and problems to solve
 - For science questions, ask about real phenomena and processes
 - Each question should be self-contained and clear
+- Make distractors (wrong options) plausible but clearly incorrect
 
-Return ONLY a JSON array of exactly 20 question strings. No explanations, no numbering, just the JSON array.
-Example format: ["What is 2 + 3?", "Name the three states of matter.", ...]`;
+Return ONLY a JSON array of exactly 20 question objects in this exact format:
+[
+  {
+    "question": "What is 2 + 3?",
+    "options": ["3", "4", "5", "6"],
+    "correctAnswers": [2]
+  }
+]
+
+The correctAnswers array contains 0-indexed positions of correct options (0=A, 1=B, 2=C, 3=D).
+For questions with multiple correct answers, include all correct indices, e.g., [0, 2] means A and C are correct.`;
 
     const userPrompt = `Generate 20 educational questions for:
 Subject: ${subject}
@@ -86,29 +118,48 @@ Class Level: ${classLevel}`;
     }
 
     // Parse the JSON array from the response
-    let questions: string[];
+    interface QuestionItem {
+      question: string;
+      options: string[];
+      correctAnswers: number[];
+    }
+    
+    let questions: QuestionItem[];
     try {
       // Try to extract JSON array from the response
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         questions = JSON.parse(jsonMatch[0]);
+        // Validate and fix structure
+        questions = questions.map((q, idx) => ({
+          question: q.question || `Question ${idx + 1}`,
+          options: Array.isArray(q.options) && q.options.length === 4 
+            ? q.options 
+            : ["Option A", "Option B", "Option C", "Option D"],
+          correctAnswers: Array.isArray(q.correctAnswers) && q.correctAnswers.length > 0
+            ? q.correctAnswers
+            : [0]
+        }));
       } else {
         throw new Error("No JSON array found in response");
       }
     } catch (parseError) {
       console.error("Failed to parse AI response:", content);
-      // Fallback: split by newlines if JSON parsing fails
-      questions = content
-        .split(/\n/)
-        .filter((line: string) => line.trim())
-        .map((line: string) => line.replace(/^\d+[\.\)]\s*/, "").trim())
-        .filter((line: string) => line.length > 0)
-        .slice(0, 20);
+      // Fallback: create basic questions
+      questions = Array.from({ length: 20 }, (_, i) => ({
+        question: `Practice question ${i + 1}: Explain what you learned about ${concepts}.`,
+        options: ["Option A", "Option B", "Option C", "Option D"],
+        correctAnswers: [0]
+      }));
     }
 
     // Ensure we have exactly 20 questions
     while (questions.length < 20) {
-      questions.push(`Practice question ${questions.length + 1}: Explain what you learned about ${concepts}.`);
+      questions.push({
+        question: `Practice question ${questions.length + 1}: Explain what you learned about ${concepts}.`,
+        options: ["Option A", "Option B", "Option C", "Option D"],
+        correctAnswers: [0]
+      });
     }
     questions = questions.slice(0, 20);
 

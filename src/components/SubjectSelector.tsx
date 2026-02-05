@@ -14,9 +14,15 @@ import { Lightbulb, PenTool, ArrowLeft } from "lucide-react";
 
 interface SubjectSelectorProps {
   userName: string;
-  onGenerate: (data: { subject: string; concepts: string }) => void;
+  onGenerate: (data: { subject: string; concepts: string; complexity: string }) => void;
   onBack: () => void;
 }
+
+const complexityLevels = [
+  { value: "easy", label: "Easy 🌱", description: "Simple questions for beginners" },
+  { value: "medium", label: "Medium 🌿", description: "Balanced challenge" },
+  { value: "hard", label: "Hard 🌳", description: "Advanced & challenging" },
+];
 
 const subjects = [
   { value: "mathematics", label: "Mathematics 🔢", emoji: "🔢" },
@@ -36,15 +42,16 @@ const subjects = [
 const SubjectSelector = ({ userName, onGenerate, onBack }: SubjectSelectorProps) => {
   const [subject, setSubject] = useState("");
   const [concepts, setConcepts] = useState("");
+  const [complexity, setComplexity] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (subject && concepts.trim()) {
-      onGenerate({ subject, concepts });
+    if (subject && concepts.trim() && complexity) {
+      onGenerate({ subject, concepts, complexity });
     }
   };
 
-  const isFormValid = subject && concepts.trim();
+  const isFormValid = subject && concepts.trim() && complexity;
 
   return (
     <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
@@ -112,12 +119,37 @@ const SubjectSelector = ({ userName, onGenerate, onBack }: SubjectSelectorProps)
                   placeholder="Enter the topics or concepts you want to practice (e.g., fractions, photosynthesis, grammar rules...)"
                   value={concepts}
                   onChange={(e) => setConcepts(e.target.value)}
-                  className="min-h-[120px] text-base rounded-xl border-2 focus:border-primary transition-colors resize-none"
+                  className="min-h-[100px] text-base rounded-xl border-2 focus:border-primary transition-colors resize-none"
                   maxLength={500}
                 />
                 <p className="text-sm text-muted-foreground text-right">
                   {concepts.length}/500 characters
                 </p>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-base font-semibold">
+                  Complexity Level 🎯
+                </Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {complexityLevels.map((level) => (
+                    <button
+                      key={level.value}
+                      type="button"
+                      onClick={() => setComplexity(level.value)}
+                      className={`p-4 rounded-xl border-2 transition-all duration-200 text-center ${
+                        complexity === level.value
+                          ? "border-primary bg-primary/10 shadow-md"
+                          : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="text-lg font-bold">{level.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {level.description}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <Button
