@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Printer, ArrowLeft, FileText, Sparkles, RefreshCw } from "lucide-react";
+import { Printer, ArrowLeft, FileText, Sparkles, RefreshCw, Send, CheckCircle2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import QuizResults from "./QuizResults";
 
 interface QuestionItem {
   question: string;
@@ -63,9 +64,71 @@ const QuestionPaper = ({
   onRegenerate,
   isLoading,
 }: QuestionPaperProps) => {
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number[]>>({});
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [rating, setRating] = useState(0);
+
   const handlePrint = () => {
     window.print();
   };
+
+  const handleOptionToggle = (questionIndex: number, optionIndex: number, hasMultipleCorrect: boolean) => {
+    if (isSubmitted) return;
+    
+    setSelectedAnswers((prev) => {
+      const current = prev[questionIndex] || [];
+      
+      if (hasMultipleCorrect) {
+        // Multi-select: toggle the option
+        if (current.includes(optionIndex)) {
+          return { ...prev, [questionIndex]: current.filter((i) => i !== optionIndex) };
+        } else {
+          return { ...prev, [questionIndex]: [...current, optionIndex] };
+        }
+      } else {
+        // Single-select: replace with new option
+        return { ...prev, [questionIndex]: [optionIndex] };
+      }
+    });
+  };
+
+  const calculateScore = () => {
+    let correctCount = 0;
+    
+    questions.forEach((question, index) => {
+      const selected = selectedAnswers[index] || [];
+      const correct = question.correctAnswers;
+      
+      // Check if selected answers match correct answers exactly
+      const isCorrect =
+        selected.length === correct.length &&
+        selected.every((ans) => correct.includes(ans)) &&
+        correct.every((ans) => selected.includes(ans));
+      
+      if (isCorrect) correctCount++;
+    });
+    
+    return correctCount;
+  };
+
+  const handleSubmit = () => {
+    const finalScore = calculateScore();
+    setScore(finalScore);
+    setIsSubmitted(true);
+  };
+
+  const handleRetry = () => {
+    setSelectedAnswers({});
+    setIsSubmitted(false);
+    setScore(0);
+    setRating(0);
+    onRegenerate();
+  };
+
+  const answeredCount = Object.keys(selectedAnswers).filter(
+    (key) => selectedAnswers[parseInt(key)]?.length > 0
+  ).length;
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -75,6 +138,22 @@ const QuestionPaper = ({
 
   const complexityInfo = getComplexityLabel(complexity);
   const optionLabels = ["A", "B", "C", "D"];
+
+  // Show results screen after submission
+  if (isSubmitted) {
+    return (
+      <QuizResults
+        score={score}
+        totalQuestions={questions.length}
+        subject={getSubjectName(subject)}
+        concepts={concepts}
+        rating={rating}
+        onRatingChange={setRating}
+        onRetry={handleRetry}
+        onStartOver={onStartOver}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen gradient-hero p-4 md:p-8">
@@ -107,10 +186,19 @@ const QuestionPaper = ({
           </Button>
           <Button
             onClick={handlePrint}
-            className="gradient-primary rounded-xl font-semibold shadow-button hover:opacity-90 transition-opacity flex items-center gap-2"
+            variant="outline"
+            className="rounded-xl font-semibold flex items-center gap-2"
           >
             <Printer className="w-5 h-5" />
-            Print Paper
+            Print
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={answeredCount === 0}
+            className="gradient-primary rounded-xl font-semibold shadow-button hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            <Send className="w-5 h-5" />
+            Submit ({answeredCount}/{questions.length})
           </Button>
         </div>
 
@@ -178,27 +266,44 @@ const QuestionPaper = ({
                       </div>
                       
                       <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {item.options.map((option, optIdx) => (
-                          <div
-                            key={optIdx}
-                            className="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                          >
-                            {hasMultipleCorrect ? (
-                              <Checkbox id={`q${index}-opt${optIdx}`} className="print:border-2" />
-                            ) : (
-                              <div className="h-4 w-4 rounded-full border border-primary print:border-2" />
-                            )}
-                            <Label
-                              htmlFor={`q${index}-opt${optIdx}`}
-                              className="flex-1 cursor-pointer text-sm"
+                        {item.options.map((option, optIdx) => {
+                          const isSelected = (selectedAnswers[index] || []).includes(optIdx);
+                          
+                          return (
+                            <button
+                              key={optIdx}
+                              type="button"
+                              onClick={() => handleOptionToggle(index, optIdx, hasMultipleCorrect)}
+                              className={`flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                                isSelected
+                                  ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                                  : "border-border/50 hover:bg-muted/30 hover:border-primary/30"
+                              }`}
                             >
-                              <span className="font-semibold text-primary mr-2">
-                                {optionLabels[optIdx]}.
+                              {hasMultipleCorrect ? (
+                                <Checkbox 
+                                  checked={isSelected}
+                                  className="print:border-2 pointer-events-none" 
+                                />
+                              ) : (
+                                <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
+                                  isSelected ? "border-primary bg-primary" : "border-primary"
+                                }`}>
+                                  {isSelected && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
+                                </div>
+                              )}
+                              <span className="flex-1 text-sm">
+                                <span className="font-semibold text-primary mr-2">
+                                  {optionLabels[optIdx]}.
+                                </span>
+                                {option}
                               </span>
-                              {option}
-                            </Label>
-                          </div>
-                        ))}
+                              {isSelected && (
+                                <CheckCircle2 className="w-4 h-4 text-primary flex-shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   );
