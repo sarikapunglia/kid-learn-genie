@@ -168,17 +168,87 @@
   .no-print {
     display: none !important;
   }
-  
-  body {
+
+  * {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  html, body {
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    font-size: 9pt !important;
+    line-height: 1.2 !important;
   }
-  
+
   .print-paper {
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
     margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Compact header */
+  .print-paper [class*="CardHeader"] {
+    padding: 4pt 0 !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+
+  .print-paper [class*="CardContent"] {
+    padding: 4pt 0 !important;
+  }
+
+  /* Compact question spacing */
+  .print-paper .space-y-8 > * {
+    margin-top: 4pt !important;
+    padding-bottom: 2pt !important;
+  }
+
+  .print-paper .space-y-6 > * {
+    margin-top: 2pt !important;
+  }
+
+  /* Compact options grid */
+  .print-paper .grid {
+    gap: 2pt !important;
+    margin-left: 12pt !important;
+  }
+
+  .print-paper .grid button,
+  .print-paper .grid label {
+    padding: 1pt 4pt !important;
+    border: none !important;
+    font-size: 8pt !important;
+    min-height: unset !important;
+  }
+
+  /* Hide decorative elements */
+  .print-paper svg.lucide-check-circle-2,
+  .print-paper [class*="ring-"] {
+    display: none !important;
+  }
+
+  /* Question text compact */
+  .print-paper .mb-4 {
+    margin-bottom: 2pt !important;
+  }
+
+  /* Footer */
+  .print-paper .pt-8 {
+    padding-top: 4pt !important;
+  }
+
+  /* Force single page */
+  .gradient-hero {
+    padding: 0 !important;
+    min-height: unset !important;
+    background: white !important;
+  }
+
+  h1 {
+    font-size: 12pt !important;
   }
 }
