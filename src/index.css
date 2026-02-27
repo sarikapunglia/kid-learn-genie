@@ -179,8 +179,8 @@
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    font-size: 9pt !important;
-    line-height: 1.2 !important;
+    font-size: 8pt !important;
+    line-height: 1.15 !important;
   }
 
   .print-paper {
@@ -203,26 +203,37 @@
 
   /* Compact question spacing */
   .print-paper .space-y-8 > * {
-    margin-top: 4pt !important;
-    padding-bottom: 2pt !important;
+    margin-top: 2pt !important;
+    padding-bottom: 1pt !important;
   }
 
   .print-paper .space-y-6 > * {
-    margin-top: 2pt !important;
+    margin-top: 1pt !important;
   }
 
-  /* Compact options grid */
+  .print-paper .pb-6 {
+    padding-bottom: 1pt !important;
+  }
+
+  .print-paper .mb-4 {
+    margin-bottom: 1pt !important;
+  }
+
+/* Force options into a single inline row */
   .print-paper .grid {
-    gap: 2pt !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 4pt !important;
     margin-left: 12pt !important;
   }
 
   .print-paper .grid button,
   .print-paper .grid label {
-    padding: 1pt 4pt !important;
+    padding: 0 4pt !important;
     border: none !important;
-    font-size: 8pt !important;
+    font-size: 7.5pt !important;
     min-height: unset !important;
+    flex: 1 1 0 !important;
   }
 
   /* Hide decorative elements */
@@ -249,6 +260,24 @@
   }
 
   h1 {
-    font-size: 12pt !important;
+    font-size: 10pt !important;
+  }
+
+  .print-paper .border-b {
+    border-bottom-width: 0.5pt !important;
+  }
+
+  .print-paper .pt-8 {
+    padding-top: 2pt !important;
+  }
+
+  .print-paper .pb-8 {
+    padding-bottom: 2pt !important;
+  }
+
+  /* Hide checkboxes and radio circles in print */
+  .print-paper .grid button > div,
+  .print-paper .grid button > span > svg {
+    display: none !important;
   }
 }
