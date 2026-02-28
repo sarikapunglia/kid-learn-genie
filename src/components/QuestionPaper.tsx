@@ -312,6 +312,15 @@ const QuestionPaper = ({
               <div className="pt-8 border-t-2 border-dashed border-border text-center text-muted-foreground">
                 <p className="font-semibold">✨ Good luck! You've got this! ✨</p>
               </div>
+
+              {/* Answer key - print only, inverted */}
+              <div className="hidden print:block pt-4 border-t border-border/30">
+                <p className="text-[6pt] text-muted-foreground text-center" style={{ transform: "rotate(180deg)" }}>
+                  Answer Key: {questions.map((q, i) => 
+                    `${i + 1}) ${q.correctAnswers.map(a => optionLabels[a]).join(",")}`
+                  ).join("  |  ")}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
