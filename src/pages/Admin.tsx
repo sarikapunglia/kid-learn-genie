@@ -17,6 +17,7 @@ interface Profile {
 const Admin = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -36,9 +37,24 @@ const Admin = () => {
 
   useEffect(() => {
     if (!session) return;
-    const fetchProfiles = async () => {
-      // Users can only see their own profile due to RLS
-      // For a full admin view, you'd need a service role or admin RLS policy
+    const fetchData = async () => {
+      // Check admin role
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (!roleData) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+
+      setIsAdmin(true);
+
+      // Admin can now see all profiles via RLS policy
       const { data } = await supabase
         .from("profiles")
         .select("name, age, class_level, created_at, user_id")
@@ -47,7 +63,7 @@ const Admin = () => {
       setProfiles(data || []);
       setLoading(false);
     };
-    fetchProfiles();
+    fetchData();
   }, [session]);
 
   const completedProfiles = profiles.filter(p => p.name);
@@ -71,6 +87,20 @@ const Admin = () => {
             <span className="text-3xl">📊</span>
           </div>
         </div>
+      </div>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen gradient-hero flex items-center justify-center p-4">
+        <Card className="border-0 shadow-card max-w-md w-full">
+          <CardContent className="pt-8 pb-6 text-center">
+            <p className="text-2xl mb-2">🔒</p>
+            <p className="text-lg font-semibold text-foreground mb-2">Admin Access Required</p>
+            <p className="text-muted-foreground mb-4">You don't have permission to view this page.</p>
+            <Button onClick={() => navigate("/")} className="gradient-primary">Go Home</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
