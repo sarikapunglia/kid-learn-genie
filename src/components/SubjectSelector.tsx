@@ -62,7 +62,7 @@ const SubjectSelector = ({ userName, onGenerate, onBack }: SubjectSelectorProps)
           className="mb-6 flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors font-semibold"
         >
           <ArrowLeft className="w-5 h-5" />
-          Back to Login
+          Back to Profiles
         </button>
 
         {/* Header */}

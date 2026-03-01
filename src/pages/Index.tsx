@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import AuthPage from "@/components/AuthPage";
-import LoginForm from "@/components/LoginForm";
+import ProfilePicker from "@/components/ProfilePicker";
 import SubjectSelector from "@/components/SubjectSelector";
 import QuestionPaper from "@/components/QuestionPaper";
 import LoadingScreen from "@/components/LoadingScreen";
 import type { Session } from "@supabase/supabase-js";
 
-type AppStep = "auth" | "login" | "select" | "loading" | "paper";
+type AppStep = "auth" | "profiles" | "select" | "loading" | "paper";
 
 interface UserData {
   name: string;
@@ -43,8 +43,8 @@ const Index = () => {
       (_event, session) => {
         setSession(session);
         if (session) {
-          // Check if profile has name filled in
-          setTimeout(() => loadProfile(session.user.id), 0);
+          setStep("profiles");
+          setAuthLoading(false);
         } else {
           setStep("auth");
           setUserData(null);
@@ -56,43 +56,19 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        loadProfile(session.user.id);
-      } else {
-        setAuthLoading(false);
+        setStep("profiles");
       }
+      setAuthLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const loadProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("name, age, class_level")
-      .eq("user_id", userId)
-      .single();
-
-    if (data && data.name) {
-      setUserData({ name: data.name, age: data.age, classLevel: data.class_level });
-      setStep("select");
-    } else {
-      setStep("login");
-    }
-    setAuthLoading(false);
-  };
-
   const handleAuthSuccess = () => {
     // onAuthStateChange will handle the rest
   };
 
-  const handleLogin = async (data: UserData) => {
-    if (!session) return;
-    // Save profile data
-    await supabase
-      .from("profiles")
-      .update({ name: data.name, age: data.age, class_level: data.classLevel })
-      .eq("user_id", session.user.id);
-
+  const handleSelectProfile = (data: UserData) => {
     setUserData(data);
     setStep("select");
   };
@@ -167,7 +143,7 @@ const Index = () => {
     setStep("auth");
   };
 
-  const handleBackToLogin = () => setStep("login");
+  const handleBackToProfiles = () => setStep("profiles");
 
   if (authLoading) {
     return (
@@ -185,8 +161,14 @@ const Index = () => {
     return <AuthPage onAuthSuccess={handleAuthSuccess} />;
   }
 
-  if (step === "login") {
-    return <LoginForm onLogin={handleLogin} />;
+  if (step === "profiles" && session) {
+    return (
+      <ProfilePicker
+        userId={session.user.id}
+        onSelectProfile={handleSelectProfile}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   if (step === "select" && userData) {
@@ -194,7 +176,7 @@ const Index = () => {
       <SubjectSelector
         userName={userData.name}
         onGenerate={handleGenerate}
-        onBack={handleLogout}
+        onBack={handleBackToProfiles}
       />
     );
   }
