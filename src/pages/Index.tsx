@@ -26,6 +26,7 @@ interface QuestionItem {
   question: string;
   options: string[];
   correctAnswers: number[];
+  imageUrl?: string | null;
 }
 
 const Index = () => {

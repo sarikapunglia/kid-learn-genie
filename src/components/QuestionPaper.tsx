@@ -10,6 +10,7 @@ interface QuestionItem {
   question: string;
   options: string[];
   correctAnswers: number[];
+  imageUrl?: string | null;
 }
 
 interface QuestionPaperProps {
@@ -257,12 +258,26 @@ const QuestionPaper = ({
                     >
                       <div className="flex gap-2 mb-4">
                         <span className="font-bold text-primary">{index + 1}.</span>
-                        <span className="font-medium">{item.question}</span>
-                        {hasMultipleCorrect && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full ml-2 whitespace-nowrap">
-                            Multiple answers
-                          </span>
-                        )}
+                        <div className="flex-1">
+                          <div className="flex items-start gap-2">
+                            <span className="font-medium">{item.question}</span>
+                            {hasMultipleCorrect && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
+                                Multiple answers
+                              </span>
+                            )}
+                          </div>
+                          {item.imageUrl && (
+                            <div className="mt-3 mb-1">
+                              <img
+                                src={item.imageUrl}
+                                alt={`Visual for question ${index + 1}`}
+                                className="max-w-[280px] max-h-[200px] rounded-lg border border-border/50 object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="ml-6 grid grid-cols-1 md:grid-cols-2 gap-3">
