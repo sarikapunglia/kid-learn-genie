@@ -163,7 +163,81 @@ Class Level: ${classLevel}`;
     }
     questions = questions.slice(0, 20);
 
-    return new Response(JSON.stringify({ questions }), {
+    // Generate images for ~20% of questions (4 questions)
+    const visualQuestionIndices: number[] = [];
+    // Pick 4 questions spread across the paper for visual variety
+    const candidates = questions
+      .map((q, i) => ({ index: i, question: q.question }))
+      .filter(q => {
+        // Prefer questions about shapes, diagrams, patterns, graphs, maps, pictures, animals, plants, etc.
+        const visualKeywords = /shape|diagram|graph|chart|map|picture|image|figure|draw|identify|observe|look|pattern|animal|plant|body|organ|planet|cell|circuit|flag|symbol|clock|fraction|geometry|triangle|circle|square|rectangle/i;
+        return visualKeywords.test(q.question);
+      });
+    
+    if (candidates.length >= 4) {
+      // Pick 4 from visual candidates
+      for (let i = 0; i < 4 && i < candidates.length; i++) {
+        visualQuestionIndices.push(candidates[i].index);
+      }
+    } else {
+      // Fill remaining slots with evenly spaced questions
+      const alreadyPicked = new Set(candidates.map(c => c.index));
+      for (const c of candidates) {
+        visualQuestionIndices.push(c.index);
+      }
+      const step = Math.floor(20 / (4 - visualQuestionIndices.length + 1));
+      for (let i = step; visualQuestionIndices.length < 4 && i < 20; i += step) {
+        if (!alreadyPicked.has(i)) {
+          visualQuestionIndices.push(i);
+        }
+      }
+    }
+
+    // Generate images in parallel for selected questions
+    const imagePromises = visualQuestionIndices.map(async (qIndex) => {
+      try {
+        const q = questions[qIndex];
+        const imagePrompt = `Create a simple, clean, colorful educational illustration for a ${classLevel} student (age ${age}) for this ${subject} question: "${q.question}". The image should be a helpful visual aid, diagram, or illustration that relates to the question. Use a white background, clear lines, and bright kid-friendly colors. Do NOT include any text or labels in the image.`;
+        
+        const imgResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-image",
+            messages: [{ role: "user", content: imagePrompt }],
+            modalities: ["image", "text"],
+          }),
+        });
+
+        if (!imgResponse.ok) {
+          console.error(`Image generation failed for question ${qIndex}:`, imgResponse.status);
+          return { index: qIndex, imageUrl: null };
+        }
+
+        const imgData = await imgResponse.json();
+        const imageUrl = imgData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+        return { index: qIndex, imageUrl: imageUrl || null };
+      } catch (err) {
+        console.error(`Image generation error for question ${qIndex}:`, err);
+        return { index: qIndex, imageUrl: null };
+      }
+    });
+
+    const imageResults = await Promise.all(imagePromises);
+    
+    // Attach images to questions
+    const questionsWithImages = questions.map((q, i) => {
+      const imgResult = imageResults.find(r => r.index === i);
+      return {
+        ...q,
+        imageUrl: imgResult?.imageUrl || null,
+      };
+    });
+
+    return new Response(JSON.stringify({ questions: questionsWithImages }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
