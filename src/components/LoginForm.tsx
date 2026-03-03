@@ -32,10 +32,10 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
             <BookOpen className="w-10 h-10 text-primary-foreground" />
           </div>
           <h1 className="text-4xl font-extrabold text-foreground mb-2">
-            Learn & Play! <Sparkles className="inline w-8 h-8 text-secondary" />
+            Learnix <Sparkles className="inline w-8 h-8 text-secondary" />
           </h1>
           <p className="text-muted-foreground text-lg">
-            Let's start your learning adventure!
+            Practice Question Papers for a topic of your choice
           </p>
         </div>
 
