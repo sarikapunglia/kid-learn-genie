@@ -6,7 +6,7 @@ import ProfilePicker from "@/components/ProfilePicker";
 import SubjectSelector from "@/components/SubjectSelector";
 import QuestionPaper from "@/components/QuestionPaper";
 import LoadingScreen from "@/components/LoadingScreen";
-import type { Session } from "@supabase/supabase-js";
+import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError, type Session } from "@supabase/supabase-js";
 
 type AppStep = "auth" | "profiles" | "select" | "loading" | "paper";
 
@@ -103,12 +103,30 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error generating questions:", error);
+
+      let errorMessage = "Failed to generate questions. Please try again.";
+
+      if (error instanceof FunctionsHttpError) {
+        try {
+          const errorBody = await error.context.json();
+          errorMessage =
+            typeof errorBody?.error === "string"
+              ? errorBody.error
+              : "The question service returned an error.";
+        } catch {
+          errorMessage = "The question service returned an error.";
+        }
+      } else if (error instanceof FunctionsRelayError) {
+        errorMessage = "Unable to reach the question service. Please try again.";
+      } else if (error instanceof FunctionsFetchError) {
+        errorMessage = "Network error while generating questions. Check your connection and retry.";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Oops! Something went wrong",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate questions. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
       setStep("select");
