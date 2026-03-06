@@ -74,7 +74,25 @@ const Index = () => {
     setStep("select");
   };
 
-  const generateQuestions = async (data: QuestionData) => {
+  const generateQuestions = async (data: UserData) => {
+  try {
+    const responseData = {
+      questions: [
+        "Sample Question 1",
+        "Sample Question 2",
+        "Sample Question 3"
+      ]
+    };
+
+    return responseData;
+
+  } catch (error) {
+    console.error(error);
+    return { questions: [] };
+  }
+};
+
+ /* const generateQuestions = async (data: QuestionData) => {
     if (!userData) return;
 
     try {
@@ -90,7 +108,7 @@ const Index = () => {
             classLevel: userData.classLevel,
           },
         }
-      );
+      );*/
 
       if (error) throw new Error(error.message);
       if (responseData?.error) throw new Error(responseData.error);
