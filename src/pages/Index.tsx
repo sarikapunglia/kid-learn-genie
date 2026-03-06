@@ -78,8 +78,9 @@ const Index = () => {
     if (!userData) return;
 
     try {
-      const { data: responseData, error } = await supabase.functions.invoke(
-        "generate-questions",
+     const responseData = {
+    questions: ["AI generation temporarily disabled"]
+     };
         {
           body: {
             subject: data.subject,
